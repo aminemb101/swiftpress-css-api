@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Environment variables and local configuration
+.env
+.env.*
+!.env.example
+
+# Runtime output and temporary files
+public/css/
+tmp/
+temp/
+*.tmp
+*.log
+*.css
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test and tool output
+coverage/
+.nyc_output/
+playwright/.cache/
+playwright/report/
+playwright/test-results/
+.cache/
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+test-*

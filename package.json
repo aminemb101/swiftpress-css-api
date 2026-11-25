@@ -1,0 +1,22 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "node --stack-trace-limit=100 critical.js",
+    "test": "node --stack-trace-limit=100 test-critical.js",
+    "test:minimal": "node --stack-trace-limit=100 test-minimal.js"
+
+  },
+  "dependencies": {
+    "critical": "^9.0.0",
+    "express": "^5.2.1",
+    "minimalcss": "^0.11.3",
+    "morgan": "^1.12.1",
+    "p-queue": "^9.3.3"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  },
+  "allowScripts": {
+    "puppeteer@2.1.1": true
+  }
+}
