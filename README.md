@@ -31,6 +31,19 @@ curl -X POST http://localhost:3000/api/css/jobs \
 Minimalcss. Both strategies return extracted CSS rather than rewriting the
 source page.
 
+For the `minimal` strategy, pass an optional `whitelist` array of regular
+expression strings to keep matching CSS selectors in the output, even if they
+aren't found in the page's initial DOM. For example:
+
+```sh
+curl -X POST http://localhost:3000/api/css/jobs \
+  -H 'content-type: application/json' \
+  -d '{"url":"https://example.com/","strategy":"minimal","whitelist":["sidebar","icon-.*",".*-error"]}'
+```
+
+`whitelist` is only supported with `strategy: "minimal"`. Its entries are
+regular expressions matched against CSS selector text.
+
 The API responds with `202 Accepted` and a job object containing `id`,
 `statusUrl`, and the current status (`queued`, `processing`, `completed`, or
 `failed`). Poll `statusUrl` until the job completes. The completed response

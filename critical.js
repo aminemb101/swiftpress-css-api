@@ -38,8 +38,8 @@ function jobResponse(job, baseUrl) {
   };
 }
 
-async function optimizeCss(strategy, url) {
-  if (strategy === 'minimal') return optimizeMinimalCss(url);
+async function optimizeCss(strategy, url, whitelist) {
+  if (strategy === 'minimal') return optimizeMinimalCss(url, whitelist);
 
   const result = await critical({ src: url, inline: false });
   if (typeof result?.css !== 'string') {
@@ -70,10 +70,10 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 /**
  * Create a CSS optimization job.
- * Body: { url, strategy: "critical" | "minimal", callbackUrl? }
+ * Body: { url, strategy: "critical" | "minimal", callbackUrl?, whitelist? }
  */
 app.post('/api/css/jobs', async (req, res) => {
-  const { url, strategy = 'critical', callbackUrl } = req.body ?? {};
+  const { url, strategy = 'critical', callbackUrl, whitelist = [] } = req.body ?? {};
 
   if (typeof url !== 'string') {
     return res.status(400).json({ error: 'url must be a valid HTTP(S) URL' });
@@ -91,6 +91,17 @@ app.post('/api/css/jobs', async (req, res) => {
   if (!['critical', 'minimal'].includes(strategy)) {
     return res.status(400).json({ error: 'strategy must be "critical" or "minimal"' });
   }
+  if (!Array.isArray(whitelist) || whitelist.some((pattern) => typeof pattern !== 'string')) {
+    return res.status(400).json({ error: 'whitelist must be an array of regular expression strings' });
+  }
+  if (strategy !== 'minimal' && whitelist.length > 0) {
+    return res.status(400).json({ error: 'whitelist is only supported with strategy "minimal"' });
+  }
+  try {
+    whitelist.forEach((pattern) => new RegExp(pattern));
+  } catch {
+    return res.status(400).json({ error: 'whitelist entries must be valid regular expressions' });
+  }
   if (callbackUrl !== undefined) {
     try {
       const parsedCallback = new URL(callbackUrl);
@@ -104,6 +115,7 @@ app.post('/api/css/jobs', async (req, res) => {
     id: randomUUID(),
     status: 'queued',
     strategy,
+    whitelist,
     url: parsedUrl.toString(),
     callbackUrl,
     filename: `${randomUUID()}.css`,
@@ -115,12 +127,13 @@ app.post('/api/css/jobs', async (req, res) => {
   queue.add(async () => {
     job.status = 'processing';
     try {
-      const css = await optimizeCss(job.strategy, job.url);
+      const css = await optimizeCss(job.strategy, job.url, job.whitelist);
       await writeFile(path.join(outputDirectory, job.filename), css, 'utf8');
       job.status = 'completed';
       await notifyCallback(job.callbackUrl, {
         status: job.status,
         id: job.id,
+        strategy: job.strategy,
         url: job.url,
         resultUrl: `${baseUrl}/api/css/jobs/${job.id}/css`,
       });
@@ -130,6 +143,7 @@ app.post('/api/css/jobs', async (req, res) => {
       await notifyCallback(job.callbackUrl, {
         status: job.status,
         id: job.id,
+        strategy: job.strategy,
         url: job.url,
         error: job.error,
       });

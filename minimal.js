@@ -1,12 +1,22 @@
 import minimalcss from 'minimalcss';
 
 /** Extract CSS used by the rendered page at the supplied URL. */
-export default async function optimizeMinimalCss(url) {
+export default async function optimizeMinimalCss(url, whitelist = []) {
   const result = await minimalcss.minimize({
     urls: [url],
+    whitelist,
     debug: true,
     styletags: true,
-    skippable: (request) => ['image', 'font', 'media'].includes(request.resourceType()),
+    skippable: (request) => {
+     
+
+      const url = request.url();
+      if (url.includes('fonts.googleapis.com') || url.includes('use.typekit.net')) {
+        return true;
+      }
+
+      return false;
+    },
     puppeteerArgs: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
